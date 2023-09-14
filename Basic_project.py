@@ -41,9 +41,9 @@ result = cv2.VideoWriter('rock_paper_scissors.mp4',
                          cv2.VideoWriter_fourcc(*'MP4V'),
                          10, size)
 
-rock_img = cv2.imread("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/Rock_img.jpg")
-paper_img = cv2.imread("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/paper_img.jpg")
-scissor_img = cv2.imread("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/Scissor_img.jpg")
+rock_img = cv2.imread("/Rock_img.jpg")
+paper_img = cv2.imread("/paper_img.jpg")
+scissor_img = cv2.imread("/Scissor_img.jpg")
 
 while True:
     ret, frame = cap.read()

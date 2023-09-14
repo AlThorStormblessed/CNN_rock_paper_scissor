@@ -33,7 +33,7 @@ print("Imports done")
 Images = []
 
 rocks = []
-for file in tqdm(glob.glob("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image_data/rock/*jpg")):
+for file in tqdm(glob.glob("/image_data/rock/*jpg")):
     rocks_ = []
     imd = cv2.imread(file)
     imd = cv2.cvtColor(imd, cv2.COLOR_BGR2RGB)
@@ -46,7 +46,7 @@ for file in tqdm(glob.glob("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_
 Images.extend(rocks)
 
 paper = []
-for file in tqdm(glob.glob("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image_data/paper/*jpg")):
+for file in tqdm(glob.glob("/image_data/paper/*jpg")):
     paper_ = []
     imd = cv2.imread(file)
     imd = cv2.cvtColor(imd, cv2.COLOR_BGR2RGB)
@@ -59,7 +59,7 @@ for file in tqdm(glob.glob("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_
 Images.extend(paper)
 
 scissors = []
-for file in tqdm(glob.glob("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image_data/scissors/*jpg")):
+for file in tqdm(glob.glob("/image_data/scissors/*jpg")):
     scissors_ = []
     imd = cv2.imread(file)
     imd = cv2.cvtColor(imd, cv2.COLOR_BGR2RGB)
@@ -72,7 +72,7 @@ for file in tqdm(glob.glob("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_
 Images.extend(scissors)
 
 none = []
-for file in tqdm(glob.glob("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image_data/none/*jpg")):
+for file in tqdm(glob.glob("/image_data/none/*jpg")):
     none_ = []
     imd = cv2.imread(file)
     imd = cv2.cvtColor(imd, cv2.COLOR_BGR2RGB)

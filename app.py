@@ -5,49 +5,58 @@ from PIL import Image
 from io import BytesIO
 import cv2
 import base64
+import tensorflow as tf
 import keras
 
 camera = cv2.VideoCapture(0)
 app = Flask(__name__)
-model = keras.models.load_model('saved_model/model_t')
+model = keras.models.load_model("saved_model/model_t")
 
-@app.route('/')
+
+@app.route("/")
 def home():
-    return render_template('RPS.html')
+    return render_template("RPS.html")
 
-@app.route('/predict',methods=['POST'])
+
+@app.route("/predict", methods=["POST"])
 def predict():
-    
+
     try:
         success, img_gen = camera.read()
 
-        #img = Image.fromarray(img_gen, "RGB")
+        # img = Image.fromarray(img_gen, "RGB")
         cv2.imwrite("image.jpg", img_gen)
-        img_gen = Image.open("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image.jpg")
+        img_gen = Image.open(
+            "C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image.jpg"
+        )
         img_gen = img_gen.resize((224, 224))
         img_gen = np.ravel(img_gen)
         prediction = model.predict([img_gen])
 
         output = ["Rock!", "Paper!", "Scissors!"][prediction[0]]
 
-        return render_template('RPS.html', prediction_text=f'{output}')
-    
+        return render_template("RPS.html", prediction_text=f"{output}")
+
     except Exception as e:
         print(e)
-        return render_template('RPS.html')
+        return render_template("RPS.html")
 
-@app.route('/results',methods=['POST'])
+
+@app.route("/results", methods=["POST"])
 def results():
 
     data = request.get_json(force=True)
 
-    img_gen = Image.open("C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image.jpg")
+    img_gen = Image.open(
+        "C:/Users/anshg/OneDrive/Desktop/Python shit/ML/Rock_paper_scissors/image.jpg"
+    )
     img_gen = img_gen.resize((224, 224))
     img_gen = np.ravel(img_gen)
     prediction = model.predict([img_gen])
 
     output = ["Rock!", "Paper!", "Scissors!"][prediction[0]]
     return jsonify(output)
+
 
 def gen_frames():  # generate frame by frame from camera
     while True:
@@ -56,23 +65,23 @@ def gen_frames():  # generate frame by frame from camera
         if not success:
             break
         else:
-            ret, buffer = cv2.imencode('.jpg', frame)
+            ret, buffer = cv2.imencode(".jpg", frame)
             frame = buffer.tobytes()
-            yield (b'--frame\r\n'
-                   b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')  # concat frame one by one and show result
+            yield (
+                b"--frame\r\n" b"Content-Type: image/jpeg\r\n\r\n" + frame + b"\r\n"
+            )  # concat frame one by one and show result
 
 
-@app.route('/video_feed')
+@app.route("/video_feed")
 def video_feed():
     """Video streaming route. Put this in the src attribute of an img tag."""
-    return Response(gen_frames(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    return Response(gen_frames(), mimetype="multipart/x-mixed-replace; boundary=frame")
 
 
-@app.route('/')
+@app.route("/")
 def index():
     """Video streaming home page."""
-    return render_template('index.html')
+    return render_template("index.html")
 
 
 if __name__ == "__main__":

@@ -5,10 +5,11 @@ from PIL import Image
 from io import BytesIO
 import cv2
 import base64
+import keras
 
 camera = cv2.VideoCapture(0)
 app = Flask(__name__)
-model = pickle.load(open("RPS.pkl", "rb"))
+model = keras.models.load_model('saved_model/model_t')
 
 @app.route('/')
 def home():

@@ -1,9 +1,17 @@
 # importing libraries
 import cv2
 import numpy as np
-import tensorflow as tf
+import keras
 import random
 import time, pickle
+from keras.models import Sequential
+from keras.optimizers import Adam
+from keras.layers import Dropout, Dense, Flatten
+from keras.models import Sequential
+from keras.applications import MobileNet
+from keras.utils import to_categorical
+import json
+import requests
 
 
 def get_class_arg(array):
@@ -19,19 +27,46 @@ def get_class(argument):
         return "Scissors"
     else:
         return "Empty"
+    
+def create_model():
+    model = Sequential()
 
-# loading the trained model
-model = tf.keras.models.load_model("saved_model/model_t")
+    base_model = MobileNet(
+        weights="imagenet",  # Load weights pre-trained on ImageNet.
+        input_shape=(224, 224, 3),
+        classes=4,
+        pooling="avg",
+        include_top=False,
+    )
+    # freeezing the weights of the final layer
+    for layer in base_model.layers:
+        layer.trainable = False
 
-# q_table = {}
-# for i in ["Rock", "Paper", "Scissors"]:
-#     for j in ["Rock", "Paper", "Scissors"]:
-#         for k in ["Rock", "Paper", "Scissors"]:
-#             q_table[(i, j, k)] = [0, 0, 0]
+    # model.add(base_model)
+    # # model.add(Flatten())
+    # model.add(Dense(512, activation="relu"))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(4, activation="softmax"))  # final op layer
 
-start_q_table = "qtable-1711200203.pickle" #Q-Table pickle file
-with open(start_q_table, "rb") as f:
-    q_table = pickle.load(f)
+    model = Sequential([
+        base_model,
+        Flatten(),
+        Dense(512, activation="relu"),
+        Dropout(0.5),
+        Dense(4, activation="softmax")
+    ])
+
+    # model.build = True
+    return model
+
+model = create_model()
+# model.compile(
+#     optimizer=Adam(learning_rate=0.01),
+#     loss="categorical_crossentropy",
+#     metrics=["accuracy"])
+model.build(input_shape=(None, 224,224,3)) 
+model.load_weights("saved_model/model_t2.weights.h5")
+
 
 alpha = 0.5
 discount = 1
@@ -40,25 +75,20 @@ moves = ["Rock", "Rock", "Rock"]
 dic = {"Rock" : 0, "Paper" : 1, "Scissors" : 2}
 
 # video capture and model prediction
-cap = cv2.VideoCapture(0)
-cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1000)
-cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 1000)
+cap = cv2.VideoCapture(0, cv2.CAP_DSHOW)
+
+cap.set(cv2.CAP_PROP_FRAME_WIDTH, 1400)
+cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 800)
 cv2.namedWindow("Rock paper scissors!")
 
 played_move = 0
 n = 5
-pc_move = ["Rock", "Paper", "Scissors"][np.argmax(q_table[(moves[-1], moves[-2], moves[-3])])]
 scores = [0, 0]
 
 frame_width = int(cap.get(3)) + 60
 frame_height = int(cap.get(4)) + 60
 
 size = (frame_width, frame_height)
-
-result = cv2.VideoWriter(
-    "rock_paper_scissors.mp4", cv2.VideoWriter_fourcc(*"MP4V"), 10, size
-)
-
 rock_img = cv2.imread(
     "Rock_img.jpg"
 )
@@ -76,14 +106,15 @@ while True:
 
     # rectangle for user to play
     cv2.rectangle(frame, (100, 130), (500, 530), (255, 255, 255), 2)
-    cv2.rectangle(frame, (800, 130), (1200, 530), (0, 0, 0), 2)
+    cv2.rectangle(frame, (900, 130), (1300, 530), (0, 0, 0), 2)
 
     frame = cv2.copyMakeBorder(
         frame, 30, 30, 30, 30, cv2.BORDER_CONSTANT, value=[0, 0, 0]
     )
 
     # extract the region of image within the user rectangle
-    roi = frame[130:530, 100:500]
+    roi = frame[160:560, 130:530]
+
     img = cv2.cvtColor(roi, cv2.COLOR_BGR2RGB)
     img = cv2.resize(img, (224, 224))
     img = img / 255.0  # normalizing pixel values between 0 and 1
@@ -97,7 +128,7 @@ while True:
         played_move += 1
         if played_move >= n:
             # print(moves)
-            pc_move = ["Rock", "Paper", "Scissors"][np.argmax(q_table[(moves[-1], moves[-2], moves[-3])])]
+            pc_move = random.choice(["Rock", "Paper", "Scissors"])
 
             if (
                 (move == "Rock" and pc_move == "Paper")
@@ -106,7 +137,6 @@ while True:
             ):
                 scores[0] += 1
                 text = "Lose"
-                reward = -5
             elif (
                 (pc_move == "Rock" and move == "Paper")
                 or (pc_move == "Paper" and move == "Scissors")
@@ -114,22 +144,12 @@ while True:
             ):
                 scores[1] += 1
                 text = "Win"
-                reward = 2
             else:
                 text = "Tie"
-                reward = -1
-
-            current_q = q_table[(moves[-1], moves[-2], moves[-3])][dic[pc_move]]
-            moves.append(pc_move)
-            max_future_q = np.max(q_table[(moves[-1], moves[-2], moves[-3])])
-            new_q = (1 - alpha) * current_q + alpha * (reward + discount * max_future_q)
-            q_table[(moves[-2], moves[-3], moves[-4])][dic[pc_move]] = new_q
-
-            total_reward += reward
 
     if played_move >= n:
         font = cv2.FONT_HERSHEY_SIMPLEX
-        org = (930, 280)
+        org = (630, 280)
         fontScale = 0.8
         color = (0, 100, 100)
         thickness = 2
@@ -143,8 +163,8 @@ while True:
         target_img = cv2.resize(target_img, (400, 400))
         img2gray = cv2.cvtColor(target_img, cv2.COLOR_BGR2GRAY)
         ret, mask = cv2.threshold(img2gray, 1, 255, cv2.THRESH_BINARY)
-        if ret:
-            frame[160:560, 830:1230] = target_img
+        # if ret:
+        frame[160:560, 930:1330] = target_img
 
         font = cv2.FONT_HERSHEY_SIMPLEX
         org = (1180, 100)
@@ -163,6 +183,39 @@ while True:
         frame = cv2.putText(
             frame, text, org, font, fontScale, color, thickness, cv2.LINE_AA
         )
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+    # org
+        org = (80, 100)
+        # fontScale
+        fontScale = 0.8
+        # Blue color in BGR
+        color = (255, 0, 0)
+        # Line thickness of 2 px
+        thickness = 2
+        # Using cv2.putText() method
+        frame = cv2.putText(
+            frame, move, org, font, fontScale, color, thickness, cv2.LINE_AA
+        )
+
+        font = cv2.FONT_HERSHEY_SIMPLEX
+        org = (550, 640)
+        fontScale = 3
+        color = (0, 0, 200)
+        thickness = 5
+        frame = cv2.putText(
+            frame,
+            f"{scores[1]} - {scores[0]}",
+            org,
+            font,
+            fontScale,
+            color,
+            thickness,
+            cv2.LINE_AA,
+        )
+
+        cv2.imshow("Rock paper scissors!", frame)
+        # time.sleep(20)
 
     if played_move and pred_num == 3:
         played_move = 0
@@ -199,7 +252,11 @@ while True:
     )
 
     cv2.imshow("Rock paper scissors!", frame)
-    result.write(frame)
+
+    # data = {'move':played_move}
+    # data_json = json.dumps(data)
+    # payload = {'json_payload': data_json}
+    # r = requests.get('http://localhost:5000/results', data=payload)
 
     k = cv2.waitKey(
         5
@@ -210,14 +267,7 @@ while True:
     if k == ord("r"):
         scores[0] = 0
         scores[1] = 0
-        result = cv2.VideoWriter(
-            "rock_paper_scissors.mp4", cv2.VideoWriter_fourcc(*"MP4V"), 10, size
-        )
-
-cap.release()
-result.release()
-cv2.destroyAllWindows()
 
 
-with open(f"qtable-1711200203.pickle", "wb") as f:
-    pickle.dump(q_table, f)
+# cap.release()
+# cv2.destroyAllWindows()

@@ -84,7 +84,10 @@ for file in tqdm(
 Images.extend(none)
 
 X, y = zip(*Images)
-y = to_categorical(y, dtype="uint8")
+X = np.array(X)
+print(X.shape)
+y = to_categorical(y)
+y = np.array(y)
 
 X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=3)
 
@@ -104,12 +107,21 @@ def get_model():
     for layer in base_model.layers:
         layer.trainable = False
 
-    model.add(base_model)
-    model.add(Flatten())
-    model.add(Dense(512, activation="relu"))
-    model.add(Dropout(0.5))
-    model.add(Dense(4, activation="softmax"))  # final op layer
+    # model.add(base_model)
+    # # model.add(Flatten())
+    # model.add(Dense(512, activation="relu"))
+    # model.add(Dropout(0.5))
+    # model.add(Dense(4, activation="softmax"))  # final op layer
 
+    model = Sequential([
+        base_model,
+        Flatten(),
+        Dense(512, activation="relu"),
+        Dropout(0.5),
+        Dense(4, activation="softmax")
+    ])
+
+    # model.build = True
     return model
 
 
@@ -126,6 +138,6 @@ model.fit(
     y=np.array(y_train),
     batch_size=32,
     validation_data=(np.array(X_test), np.array(y_test)),
-    epochs=20,
+    epochs=5,
 )
-model.save_weights("Saved_model/model_t2.keras")
+model.save_weights("Saved_model/model_t2.weights.h5")
